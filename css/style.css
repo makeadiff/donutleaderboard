@@ -1,0 +1,182 @@
+@font-face {
+    font-family: 'BebasNeueRegular';
+    src: url('../fonts/BebasNeue-webfont.eot');
+    src: url('../fonts/BebasNeue-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/BebasNeue-webfont.woff') format('woff'),
+         url('../fonts/BebasNeue-webfont.ttf') format('truetype'),
+         url('../fonts/BebasNeue-webfont.svg#BebasNeueRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+
+h1 {
+	font-family:BebasNeueRegular,Arial;
+	text-align:center;
+	text-transform:uppercase;
+	/*text-shadow: 2px 2px #666;*/
+	font-size:400%;
+}
+
+
+input,textarea {
+	border:0;
+	border-left:3px solid #f70048;
+	color:#666;
+	padding:5px 0;
+}
+
+
+h2{
+	font-family:BebasNeueRegular,Arial;
+	margin-top: 10px;
+	//margin-left: 80px;
+	text-align:center;
+	color:#ed1849;
+	font-size: 180%;
+	/*text-shadow: 2px 2px #666;*/
+}
+
+body {
+	color:#fff;
+	font-family:Trebuchet MS,Arial;
+	background-color:#e7ebf2;
+}
+
+
+div.board {
+	padding-top : 370px;
+	padding-bottom : 20px;
+	//margin-top:150px;
+	width:920px;
+	//height:315px;
+	//padding:20px;
+	background:#ffffff url(../images/donutcover.jpg) no-repeat 50% 0;
+	background-color: rgb(84,185,72);
+	margin-left:auto;
+	margin-right:auto;
+	box-shadow: 10px 10px 5px #888888;
+	//border : 2px solid black;
+	
+}
+
+div.board_poc {
+    padding-top : 20px;
+    padding-bottom : 20px;
+//margin-top:150px;
+    width:1060px;
+//height:315px;
+//padding:20px;
+
+    background-color: rgb(84,185,72);
+    margin-left:auto;
+    margin-right:auto;
+    box-shadow: 10px 10px 5px #888888;
+//border : 2px solid black;
+
+}
+
+
+div.pin_left {
+	
+	padding-left:20px;
+	padding-bottom:20px;
+	padding-top:20px;
+	margin-left:30px;
+	margin-right:30px;
+	background-color: #ffe800;
+	width : 310px;
+	margin-bottom:30px;
+	height : 800px;
+	padding-right:10px;
+
+}
+
+div.pin_right {
+	
+	padding-left:20px;
+	padding-top:20px;
+	padding-bottom:20px;
+	//margin-left:40px;
+	margin-right:30px;
+	background-color: #ffe800;
+	width : 460px;
+	margin-bottom:30px;
+	height : 800px;
+	padding-right:10px;
+
+}
+
+div.pin_center {
+
+	padding-left:20px;
+	padding-bottom:20px;
+	margin-bottom:30px;
+	margin-left:30px;
+	padding-top:20px;
+	//margin-right:40px;
+	background-color: #ffe800;
+	width : 840px;
+	margin-bottom:20px;
+
+
+}
+
+div.pin_center_poc {
+
+    padding-left:20px;
+    padding-right: 20px;
+    padding-bottom:20px;
+    margin-bottom:30px;
+    margin-left:30px;
+    padding-top:20px;
+//margin-right:40px;
+    background-color: #ffe800;
+    width : 960px;
+    margin-bottom:20px;
+
+
+}
+
+table {
+
+	width:100%;
+	text-align:left;
+
+}
+
+td,th {
+
+	padding:2px;
+
+}
+
+th {
+	font-family:BebasNeueRegular,Arial;
+	font-size:150%;
+	color:#f70048;
+	
+	
+}
+
+td{ 
+
+	color:black;
+	font-weight:bold;
+	font-family:Trebuchet MS;
+
+}
+
+p {
+	color:black;
+	font-weight:bold;
+
+}
+
+
+
+tr:hover{
+	background-color:#ed2891;
+	
+}
