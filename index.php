@@ -4,124 +4,200 @@ require './common.php';
 // Users to Ignore
 $checks = array();
 $ig_users = $sql->getCol('SELECT user_id FROM users_leaderboard_ignore');
-if($ig_users) $checks[] = "donations.fundraiser_id NOT IN (" . implode(',',$ig_users) . ")";
+if($ig_users) $checks[] = "D.fundraiser_id NOT IN (" . implode(',',$ig_users) . ")";
 
 include("_city_filter.php");
 $filter_array = array();
 foreach ($city_date_filter as $city_id => $dates) {
-	$filter_array[] = "(users.city_id=$city_id AND donations.created_at >= '$dates[from] 00:00:00')";
+	$filter_array[] = "(users.city_id=$city_id AND D.created_at >= '$dates[from] 00:00:00')";
 }
 $checks[] = "(" . implode(" OR ", $filter_array) . ")";
-$filter = " AND " . implode(" AND ", $checks);
+$filter = "WHERE 1 AND " . implode(" AND ", $checks);
 
+$last_amount = 0;
+$amount_count = array('100' => 0, '500' => 0, '1000' => 0, '2000' => 0, '5000' => 0, '10000' => 0, '50000' => 0);
 
-$lessthan100 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount <= 100 $filter");
+foreach ($amount_count as $amount => $count) {
+	$amount_count[$amount] = $sql->getOne("SELECT COUNT(*) as count FROM donations D
+		INNER JOIN users ON D.fundraiser_id=users.id
+		$filter AND donation_amount > $last_amount AND donation_amount <= $amount");
+	$amount_count[$amount] += $sql->getOne("SELECT COUNT(*) as count FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id=users.id
+		$filter AND  amount > $last_amount AND amount <= $amount");
+	$last_amount = $amount;
+}
 
-$lessthan500 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 101 AND donation_amount <=500 $filter");
-							
-$lessthan1000 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 501 AND donation_amount <=1000 $filter");
-
-$lessthan2000 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 1001 AND donation_amount <=2000 $filter");
-
-$lessthan5000 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 2001 AND donation_amount <=5000 $filter");
-
-$lessthan10000 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 5001 AND donation_amount <=10000 $filter");
-							
-$lessthan50000 = $sql->getAssoc("SELECT COUNT(*) as count FROM donations
-		INNER JOIN users ON donations.fundraiser_id=users.id
-		WHERE donation_amount >= 10001 AND donation_amount <=50000 $filter");
-
-$cities = $sql->getAll("SELECT cities.name AS name, SUM(donations.donation_amount) AS amount, COUNT(donations.donation_amount) AS count
-		FROM donations 
-		INNER JOIN users ON donations.fundraiser_id = users.id
+$cities = $sql->getById("SELECT cities.id, cities.name AS name, SUM(D.donation_amount) AS amount, COUNT(D.donation_amount) AS count
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter
 		GROUP BY users.city_id
-		ORDER BY SUM(donations.donation_amount) DESC");
+		ORDER BY amount DESC");
+$cities_external = $sql->getById("SELECT cities.id, cities.name AS name, SUM(D.amount) AS amount, COUNT(D.amount) AS count
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		$filter
+		GROUP BY users.city_id
+		ORDER BY amount DESC");
+foreach ($cities as $city_id => $value) {
+	if(!isset($cities_external[$city_id])) continue;
 
-$total_amount = $sql->getAssoc("SELECT SUM(donations.donation_amount) AS amount
-		FROM donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+	$cities[$city_id]['amount'] += $cities_external[$city_id]['amount'];
+	$cities[$city_id]['count'] += $cities_external[$city_id]['count'];
+}
+
+$total_amount = $sql->getOne("SELECT SUM(D.donation_amount) AS amount
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter");
-							
-$total_donors = $sql->getAssoc("SELECT COUNT(donations.donation_amount) AS count
-		FROM donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+$total_amount += $sql->getOne("SELECT SUM(D.amount) AS amount
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter");
-						
-$fundraisers_amount = $sql->getAll("SELECT users.first_name AS first_name, users.last_name AS last_name,
-		SUM(donations.donation_amount) AS amount, COUNT(donations.donation_amount) AS count,
+
+$total_donors = $sql->getOne("SELECT COUNT(D.donation_amount) AS count
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		$filter");
+$total_donors += $sql->getOne("SELECT COUNT(D.amount) AS count
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		$filter");
+
+
+$fundraisers_amount = $sql->getById("SELECT users.id, users.first_name AS first_name, users.last_name AS last_name,
+		SUM(D.donation_amount) AS amount, COUNT(D.donation_amount) AS count,
 		cities.name as city_name
-		FROM donations 
-		INNER JOIN users ON donations.fundraiser_id = users.id
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter
 		GROUP BY users.id
-		ORDER BY SUM(donations.donation_amount) DESC
+		ORDER BY SUM(D.donation_amount) DESC
 		LIMIT 25");
-		
-$fundraisers_count = $sql->getAll("SELECT users.first_name AS first_name, users.last_name AS last_name,
-		SUM(donations.donation_amount) AS amount, COUNT(donations.donation_amount) AS count,
+$fundraisers_amount_external = $sql->getById("SELECT users.id, users.first_name AS first_name, users.last_name AS last_name,
+		SUM(D.amount) AS amount, COUNT(D.amount) AS count,
 		cities.name as city_name
-		FROM donations 
-		INNER JOIN users ON donations.fundraiser_id = users.id
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter
 		GROUP BY users.id
-		ORDER BY COUNT(donations.donation_amount) DESC
-		LIMIT 25");					
-		
-$regions = $sql->getAll("SELECT states.name AS name, SUM(donations.donation_amount) AS amount,
-		COUNT(donations.donation_amount) AS count
-		FROM donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+		ORDER BY SUM(D.amount) DESC
+		LIMIT 25");
+	
+$fundraisers_count = $sql->getById("SELECT users.id, users.first_name AS first_name, users.last_name AS last_name,
+		SUM(D.donation_amount) AS amount, COUNT(D.donation_amount) AS count,
+		cities.name as city_name
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		INNER JOIN cities ON cities.id = users.city_id
 		$filter
-		INNER JOIN states ON cities.state_id = states.id 
-		GROUP BY states.id
-		ORDER BY SUM(donations.donation_amount) DESC
-		");
+		GROUP BY users.id
+		ORDER BY COUNT(D.donation_amount) DESC
+		LIMIT 25");
+$fundraisers_count_external = $sql->getById("SELECT users.id, users.first_name AS first_name, users.last_name AS last_name,
+		SUM(D.amount) AS amount, COUNT(D.amount) AS count,
+		cities.name as city_name
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		$filter
+		GROUP BY users.id
+		ORDER BY COUNT(D.amount) DESC
+		LIMIT 25");
+
+foreach ($fundraisers_amount as $user_id => $value) {
+	if(isset($fundraisers_amount_external[$user_id])) {
+		$fundraisers_amount[$user_id]['amount'] += $fundraisers_amount_external[$user_id]['amount'];
+		$fundraisers_amount[$user_id]['count'] += $fundraisers_amount_external[$user_id]['count'];
+	}
+
+	if(isset($fundraisers_count_external[$user_id])) {
+		$fundraisers_count[$user_id]['amount'] += $fundraisers_count_external[$user_id]['amount'];
+		$fundraisers_count[$user_id]['count'] += $fundraisers_count_external[$user_id]['count'];
+	}
+} 
 
 		
+$regions = $sql->getById("SELECT states.id, states.name AS name, SUM(D.donation_amount) AS amount, COUNT(D.donation_amount) AS count
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		INNER JOIN states ON cities.state_id = states.id 
+		$filter
+		GROUP BY states.id
+		ORDER BY amount DESC");
+$regions_external = $sql->getById("SELECT states.id, states.name AS name, SUM(D.amount) AS amount, COUNT(D.amount) AS count
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
+		INNER JOIN cities ON cities.id = users.city_id
+		INNER JOIN states ON cities.state_id = states.id 
+		$filter
+		GROUP BY states.id
+		ORDER BY amount DESC");
+foreach ($regions as $state_id => $value) {
+	if(!isset($regions_external[$state_id])) continue;
+	$regions[$state_id]['amount'] += $regions_external[$state_id]['amount'];
+	$regions[$state_id]['count'] += $regions_external[$state_id]['count'];
+}
+
+
 $donut_users = $sql->getAssoc("SELECT COUNT(DISTINCT users.id) AS count
-		FROM donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		$filter");
 
-$users_10k = $sql->getAll("SELECT COUNT(*)
-		from donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+
+$user_amount_count = array('5000' => 0, '10000' => 0);
+$last_user_amount = 0;
+foreach ($user_amount_count as $amount => $count) {
+	$user_amount_count[$amount] = $sql->getOne("SELECT COUNT(D.id) AS count
+		FROM donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		$filter
 		GROUP BY users.id
-		HAVING SUM(donations.donation_amount) >= 10000");
-		
-$users_5k = $sql->getAll("SELECT COUNT(*)
-		from donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
+		HAVING SUM(D.donation_amount) > $last_user_amount AND SUM(D.donation_amount) <= $amount");
+	$user_amount_count[$amount] += $sql->getOne("SELECT COUNT(D.id) AS count
+		FROM external_donations D
+		INNER JOIN users ON D.fundraiser_id = users.id
 		$filter
 		GROUP BY users.id
-		HAVING SUM(donations.donation_amount) >= 5000");
-		
-$users_10 = $sql->getAll("SELECT COUNT(*)
-		from donations
-		INNER JOIN users ON donations.fundraiser_id = users.id
-		$filter
-		GROUP BY users.id
-		HAVING COUNT(donations.donation_amount) >= 10");
+		HAVING SUM(D.amount) > $last_user_amount AND SUM(D.amount) <= $amount");
+
+	$last_user_amount = $amount;
+}
+$user_with_more_than_10_donations = $sql->getById("SELECT users.id, COUNT(D.id) AS count
+	FROM donations D
+	INNER JOIN users ON users.id=D.fundraiser_id
+	$filter
+	GROUP BY D.fundraiser_id");
+$user_with_more_than_10_ext_donations = $sql->getById("SELECT users.id, COUNT(D.id) AS count 
+	FROM external_donations D
+	INNER JOIN users ON users.id=D.fundraiser_id
+	$filter
+	GROUP BY D.fundraiser_id");
+
+$amount_per_day = $sql->getAll("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(donation_amount) as sum 
+		FROM donations D
+		INNER JOIN users ON users.id=D.fundraiser_id
+		$filter AND D.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+		GROUP BY day");
+$amount_per_day_external = $sql->getAll("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(amount) as sum 
+		FROM external_donations D
+		INNER JOIN users ON users.id=D.fundraiser_id
+		$filter AND D.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) 
+		GROUP BY day");
+foreach ($amount_per_day as $value) {
+	$amount_per_day[$value['day']]['sum'] += $amount_per_day_external[$value['day']]['sum'];
+}
+
 ?><!DOCTYPE HTML>
 <html>
 <head>
@@ -150,13 +226,13 @@ $users_10 = $sql->getAll("SELECT COUNT(*)
         data_pie.addColumn('number', 'Number');
         data_pie.addRows([
 			<?php
-			echo "['0-100 Rs', $lessthan100[count]],";
-			echo "['101-500 Rs', $lessthan500[count]],";
-			echo "['501-1000 Rs', $lessthan1000[count]],";
-			echo "['1001-2000 Rs', $lessthan2000[count]],";
-			echo "['2001-5000 Rs', $lessthan5000[count]],";
-			echo "['5001-10000 Rs', $lessthan10000[count]],";
-			echo "['10001-50000 Rs', $lessthan50000[count]]";
+			echo "['0-100 Rs', {$amount_count['100']}],";
+			echo "['101-500 Rs', {$amount_count['500']}],";
+			echo "['501-1000 Rs', {$amount_count['1000']}],";
+			echo "['1001-2000 Rs', {$amount_count['2000']}],";
+			echo "['2001-5000 Rs', {$amount_count['5000']}],";
+			echo "['5001-10000 Rs', {$amount_count['10000']}],";
+			echo "['10001-50000 Rs', {$amount_count['50000']}]";
 			?>
         ]);
 
@@ -168,43 +244,26 @@ $users_10 = $sql->getAll("SELECT COUNT(*)
 					   'titleTextStyle' : {fontSize:16},
 					   'is3D' : true,
 					   'legend.alignment' : 'center'
-					   
 					   };
 
         // Instantiate and draw our chart, passing in some options.
         var chart_pie = new google.visualization.PieChart(document.getElementById('chart_pie_div'));
         chart_pie.draw(data_pie, options_pie);
 		
-		
 		//Line Chart
-		
-		
 		var data_line = google.visualization.arrayToDataTable([
-			
 			['Date', 'Amount Raised'],
-		
 			<?php
-			
 			for($d=30; $d>=0; $d--){
-			
 				$date_compare = new DateTime("now - $d days");
 				$date_compare = $date_compare->format('Y-m-d');
-				
-					
-				$amount_per_day = $sql->getAssoc("SELECT SUM(donation_amount) as sum FROM donations
-													INNER JOIN users ON users.id=donations.fundraiser_id
-													WHERE DATE(donations.created_at) = '$date_compare'
-													$filter");
-												
-				if($amount_per_day['sum'] != NULL)
-					echo "['$date_compare',$amount_per_day[sum]],";
+
+				if(isset($amount_per_day[$date_compare]))
+					echo "['$date_compare', ".$amount_per_day[$date_compare]['sum']."],";
 				else
 					echo "['$date_compare',0],";
-			
 			}
-			
 			?>
-		
         ]);
 
         var options_line = {
@@ -251,14 +310,12 @@ $users_10 = $sql->getAll("SELECT COUNT(*)
 	<h2>Top FundRaisers by Amount</h2>
 	
 	<?php
-	
 	echo "<table>";
 	echo "<tr><th>Rank</th><th>Name</th><th>Amount</th><th>Donors</th><th>City</th></tr>";
 	
 	$count = 0;
 	
 	foreach($fundraisers_amount as $fr){
-		
 		$count++;
 		list($first_name) = explode(" ",$fr['first_name']);
 		echo "<tr><td>$count</td><td>$first_name</td><td>" . number_format($fr['amount']) . "</td><td>$fr[count]</td><td>$fr[city_name]</td></tr>";
@@ -317,9 +374,9 @@ $users_10 = $sql->getAll("SELECT COUNT(*)
 	<h2>Other Stats</h2>
 	
 	<p>Total number of volunteers who used Donut : <?php echo $donut_users['count'];?></p>
-	<p>Number of volunteers who have raised more than 10k : <?php echo count($users_10k);?></p>
-	<p>Number of volunteers who have raised more than 5k : <?php echo count($users_5k);?></p>
-	<p>Number of volunteers with more than 10 donations : <?php echo count($users_10);?></p>
+	<p>Number of volunteers who have raised more than 10k : <?php echo $user_amount_count['10000']; ?></p>
+	<p>Number of volunteers who have raised more than 5k : <?php echo $user_amount_count['500']; ?></p>
+	<p>Number of volunteers with more than 10 donations : <?php echo $user_with_more_than_10_donations; ?></p>
 </div>
 
 <div style = "float:left" class="pin_center">
