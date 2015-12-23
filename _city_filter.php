@@ -25,3 +25,8 @@ $city_date_filter = array(
 		'21'	=> array('from' => '2016-01-17'),	// Chandigarh
 		'24'	=> array('from' => '2016-01-17'),	// Dun
 	);
+$filter_array = array();
+foreach ($city_date_filter as $city_id => $dates) {
+	$filter_array[] = "(users.city_id=$city_id AND D.created_at >= '$dates[from] 00:00:00')";
+}
+$city_checks = "(" . implode(" OR ", $filter_array) . ")";

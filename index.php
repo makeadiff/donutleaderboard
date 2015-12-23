@@ -7,11 +7,6 @@ $ig_users = $sql->getCol('SELECT user_id FROM users_leaderboard_ignore');
 if($ig_users) $checks[] = "D.fundraiser_id NOT IN (" . implode(',',$ig_users) . ")";
 
 include("_city_filter.php");
-$filter_array = array();
-foreach ($city_date_filter as $city_id => $dates) {
-	$filter_array[] = "(users.city_id=$city_id AND D.created_at >= '$dates[from] 00:00:00')";
-}
-$checks[] = "(" . implode(" OR ", $filter_array) . ")";
 $filter = "WHERE 1 AND " . implode(" AND ", $checks);
 
 $last_amount = 0;
@@ -41,23 +36,18 @@ $cities_external = $sql->getById("SELECT cities.id, cities.name AS name, SUM(D.a
 		$filter
 		GROUP BY users.city_id
 		ORDER BY amount DESC");
+$total_amount = array('amount' => 0, 'count' => 0);
 foreach ($cities as $city_id => $value) {
 	if(!isset($cities_external[$city_id])) continue;
 
 	$cities[$city_id]['amount'] += $cities_external[$city_id]['amount'];
 	$cities[$city_id]['count'] += $cities_external[$city_id]['count'];
 }
+foreach ($cities as $city_data) {
+	$total_amount['amount'] += $city_data['amount'];
+	$total_amount['count'] += $city_data['count'];
+}
 
-$total_amount = $sql->getOne("SELECT SUM(D.donation_amount) AS amount
-		FROM donations D
-		INNER JOIN users ON D.fundraiser_id = users.id
-		INNER JOIN cities ON cities.id = users.city_id
-		$filter");
-$total_amount += $sql->getOne("SELECT SUM(D.amount) AS amount
-		FROM external_donations D
-		INNER JOIN users ON D.fundraiser_id = users.id
-		INNER JOIN cities ON cities.id = users.city_id
-		$filter");
 
 $total_donors = $sql->getOne("SELECT COUNT(D.donation_amount) AS count
 		FROM donations D
@@ -155,10 +145,10 @@ $donut_users = $sql->getAssoc("SELECT COUNT(DISTINCT users.id) AS count
 		$filter");
 
 
-$user_amount_count = array('5000' => 0, '10000' => 0);
+$user_amount_count = array('100' => 0, '12000' => 0, '100000' => 0);
 $last_user_amount = 0;
 foreach ($user_amount_count as $amount => $count) {
-	$user_amount_count[$amount] = $sql->getOne("SELECT COUNT(D.id) AS count
+	$user_amount_count[$amount] = $sql->getOne("SELECT COUNT(users.id) AS count
 		FROM donations D
 		INNER JOIN users ON D.fundraiser_id = users.id
 		$filter
@@ -173,29 +163,34 @@ foreach ($user_amount_count as $amount => $count) {
 
 	$last_user_amount = $amount;
 }
-$user_with_more_than_10_donations = $sql->getById("SELECT users.id, COUNT(D.id) AS count
-	FROM donations D
-	INNER JOIN users ON users.id=D.fundraiser_id
-	$filter
-	GROUP BY D.fundraiser_id");
-$user_with_more_than_10_ext_donations = $sql->getById("SELECT users.id, COUNT(D.id) AS count 
-	FROM external_donations D
-	INNER JOIN users ON users.id=D.fundraiser_id
-	$filter
-	GROUP BY D.fundraiser_id");
+$user_with_more_than_10_donations = $sql->getOne("SELECT COUNT(users.id) AS count
+		FROM donations D
+		INNER JOIN users ON users.id=D.fundraiser_id
+		$filter
+		GROUP BY D.fundraiser_id
+		HAVING COUNT(D.id) >= 10");
+$user_with_more_than_10_ext_donations = $sql->getOne("SELECT COUNT(users.id) AS count
+		FROM external_donations D
+		INNER JOIN users ON users.id=D.fundraiser_id
+		$filter
+		GROUP BY D.fundraiser_id
+		HAVING COUNT(D.id) >= 10");
+$user_with_more_than_10_donations += $user_with_more_than_10_ext_donations;
 
-$amount_per_day = $sql->getAll("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(donation_amount) as sum 
+$amount_per_day = $sql->getById("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(donation_amount) as sum 
 		FROM donations D
 		INNER JOIN users ON users.id=D.fundraiser_id
 		$filter AND D.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) 
 		GROUP BY day");
-$amount_per_day_external = $sql->getAll("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(amount) as sum 
+$amount_per_day_external = $sql->getById("SELECT DATE_FORMAT(D.created_at, '%Y-%m-%d') AS day, SUM(amount) as sum 
 		FROM external_donations D
 		INNER JOIN users ON users.id=D.fundraiser_id
 		$filter AND D.created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) 
 		GROUP BY day");
-foreach ($amount_per_day as $value) {
-	$amount_per_day[$value['day']]['sum'] += $amount_per_day_external[$value['day']]['sum'];
+foreach ($amount_per_day as $day => $sum) {
+	if(!isset($amount_per_day_external[$day])) continue;
+
+	$amount_per_day[$day] += $amount_per_day_external[$day];
 }
 
 ?><!DOCTYPE HTML>
@@ -259,7 +254,7 @@ foreach ($amount_per_day as $value) {
 				$date_compare = $date_compare->format('Y-m-d');
 
 				if(isset($amount_per_day[$date_compare]))
-					echo "['$date_compare', ".$amount_per_day[$date_compare]['sum']."],";
+					echo "['$date_compare', ".$amount_per_day[$date_compare]."],";
 				else
 					echo "['$date_compare',0],";
 			}
@@ -299,16 +294,13 @@ foreach ($amount_per_day as $value) {
 	echo "<tr><td> </td><td> </td><td> </td></tr>";
 	echo "<tr><td> </td><td> </td><td> </td></tr>";
 
-	echo "<tr><td>GRAND TOTAL</td><td>" . number_format($total_amount['amount']) . "</td><td>$total_donors[count]</td></tr>";
+	echo "<tr><td>GRAND TOTAL</td><td>" . number_format($total_amount['amount']) . "</td><td>$total_amount[count]</td></tr>";
 	echo "</table>";
-	
 	?>
-
 </div>
 
 <div style = "float:right" class="pin_right">
-	<h2>Top FundRaisers by Amount</h2>
-	
+	<h2>Top Fund Raisers by Amount</h2>
 	<?php
 	echo "<table>";
 	echo "<tr><th>Rank</th><th>Name</th><th>Amount</th><th>Donors</th><th>City</th></tr>";
@@ -374,8 +366,9 @@ foreach ($amount_per_day as $value) {
 	<h2>Other Stats</h2>
 	
 	<p>Total number of volunteers who used Donut : <?php echo $donut_users['count'];?></p>
-	<p>Number of volunteers who have raised more than 10k : <?php echo $user_amount_count['10000']; ?></p>
-	<p>Number of volunteers who have raised more than 5k : <?php echo $user_amount_count['500']; ?></p>
+	<p>Number of volunteers who raised at least 100 : <?php echo $user_amount_count['100']; ?></p>
+	<p>Number of volunteers who raised at least 12,000 : <?php echo $user_amount_count['12000']; ?></p>
+	<p>Number of volunteers who raised at least 1,00,000 : <?php echo $user_amount_count['100000']; ?></p>
 	<p>Number of volunteers with more than 10 donations : <?php echo $user_with_more_than_10_donations; ?></p>
 </div>
 
