@@ -1,13 +1,8 @@
 <?php
 require './common.php';
 
-// Users to Ignore
-$checks = array();
-$ig_users = $sql->getCol('SELECT user_id FROM users_leaderboard_ignore');
-if($ig_users) $checks[] = "D.fundraiser_id NOT IN (" . implode(',',$ig_users) . ")";
-
 include("_city_filter.php");
-$filter = "WHERE 1 AND " . implode(" AND ", $checks);
+$filter = "WHERE $city_checks";
 
 $last_amount = 0;
 $amount_count = array('100' => 0, '500' => 0, '1000' => 0, '2000' => 0, '5000' => 0, '10000' => 0, '50000' => 0);
@@ -109,7 +104,7 @@ foreach ($fundraisers_amount as $user_id => $value) {
 		$fundraisers_amount[$user_id]['count'] += $fundraisers_amount_external[$user_id]['count'];
 	}
 
-	if(isset($fundraisers_count_external[$user_id])) {
+	if(isset($fundraisers_count_external[$user_id]) and isset($fundraisers_count[$user_id])) {
 		$fundraisers_count[$user_id]['amount'] += $fundraisers_count_external[$user_id]['amount'];
 		$fundraisers_count[$user_id]['count'] += $fundraisers_count_external[$user_id]['count'];
 	}
