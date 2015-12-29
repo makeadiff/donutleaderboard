@@ -24,9 +24,10 @@ $city_date_filter = array(
 		'4'		=> array('from' => '2016-01-17'),	// Mlore
 		'21'	=> array('from' => '2016-01-17'),	// Chandigarh
 		'24'	=> array('from' => '2016-01-17'),	// Dun
+		'25'	=> array('from' => '2015-11-22'),	// National
 	);
 $filter_array = array();
 foreach ($city_date_filter as $this_city_id => $dates) {
 	$filter_array[] = "(users.city_id=$this_city_id AND D.created_at >= '$dates[from] 00:00:00')";
 }
-$city_checks = "(" . implode(" OR ", $filter_array) . ")";
+$city_checks = "(" . implode(" OR ", $filter_array) . ") AND (users.id != 29 AND users.id != 146)";
