@@ -30,4 +30,5 @@ $filter_array = array();
 foreach ($city_date_filter as $this_city_id => $dates) {
 	$filter_array[] = "(users.city_id=$this_city_id AND D.created_at >= '$dates[from] 00:00:00')";
 }
-$city_checks = "(" . implode(" OR ", $filter_array) . ") AND (users.id != 29 AND users.id != 146)";
+$exclude_people = "(users.id != 29 AND users.id != 146 AND users.id != 27 AND users.id != 150)";
+$city_checks = "(" . implode(" OR ", $filter_array) . ") AND $exclude_people";
