@@ -1,30 +1,30 @@
 <?php
 // Get data only from this time from this city...
 $city_date_filter = array(
-		'44'	=> array('from' => '2016-10-01'),	// Bangalore
-		'6'		=> array('from' => '2016-10-01'),	// Vellore
-		'7'		=> array('from' => '2016-10-01'),	// Vizag
-		'12'	=> array('from' => '2016-10-01'),	// Bhopal
-		'17'	=> array('from' => '2016-10-01'),	// Hyd
-		'19'	=> array('from' => '2016-10-01'),	// Coimbatore
-		'9'		=> array('from' => '2016-10-01'),	// Mumbai
-		'3'		=> array('from' => '2016-10-01'),	// Cochin
-		'8'		=> array('from' => '2016-10-01'),	// Nagpur
-		'20'	=> array('from' => '2016-10-01'),	// Delhi
-		'11'	=> array('from' => '2016-10-01'),	// Kolkatta
-		'13'	=> array('from' => '2016-10-01'),	// Ahmd
-		'18'	=> array('from' => '2016-10-01'),	// Guntur
-		'16'	=> array('from' => '2016-10-01'),	// Wada
-		'15'	=> array('from' => '2016-10-01'),	// Tvm
-		'22'	=> array('from' => '2016-10-01'),	// Lucknow
-		'23'	=> array('from' => '2016-10-01'),	// Gwalior
-		'14'	=> array('from' => '2016-10-01'),	// Chennai
-		'5'		=> array('from' => '2016-10-01'),	// Mysore
-		'10'	=> array('from' => '2016-10-01'),	// Pune
-		'4'		=> array('from' => '2016-10-01'),	// Mlore
-		'21'	=> array('from' => '2016-10-01'),	// Chandigarh
-		'24'	=> array('from' => '2016-10-01'),	// Dun
-		'25'	=> array('from' => '2016-10-01'),	// National
+		'44'	=> array('from' => '2017-08-01'),	// Bangalore
+		'6'		=> array('from' => '2017-08-01'),	// Vellore
+		'7'		=> array('from' => '2017-08-01'),	// Vizag
+		'12'	=> array('from' => '2017-08-01'),	// Bhopal
+		'17'	=> array('from' => '2017-08-01'),	// Hyd
+		'19'	=> array('from' => '2017-08-01'),	// Coimbatore
+		'9'		=> array('from' => '2017-08-01'),	// Mumbai
+		'3'		=> array('from' => '2017-08-01'),	// Cochin
+		'8'		=> array('from' => '2017-08-01'),	// Nagpur
+		'20'	=> array('from' => '2017-08-01'),	// Delhi
+		'11'	=> array('from' => '2017-08-01'),	// Kolkatta
+		'13'	=> array('from' => '2017-08-01'),	// Ahmd
+		'18'	=> array('from' => '2017-08-01'),	// Guntur
+		'16'	=> array('from' => '2017-08-01'),	// Wada
+		'15'	=> array('from' => '2017-08-01'),	// Tvm
+		'22'	=> array('from' => '2017-08-01'),	// Lucknow
+		'23'	=> array('from' => '2017-08-01'),	// Gwalior
+		'14'	=> array('from' => '2017-08-01'),	// Chennai
+		'5'		=> array('from' => '2017-08-01'),	// Mysore
+		'10'	=> array('from' => '2017-08-01'),	// Pune
+		'4'		=> array('from' => '2017-08-01'),	// Mlore
+		'21'	=> array('from' => '2017-08-01'),	// Chandigarh
+		'24'	=> array('from' => '2017-08-01'),	// Dun
+		'25'	=> array('from' => '2017-08-01'),	// National
 	);
 $filter_array = array();
 foreach ($city_date_filter as $this_city_id => $dates) {
