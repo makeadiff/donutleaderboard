@@ -28,8 +28,8 @@ $city_date_filter = array(
 	);
 $filter_array = array();
 foreach ($city_date_filter as $this_city_id => $dates) {
-	$filter_array[] = "(users.city_id=$this_city_id AND D.updated_at >= '$dates[from] 00:00:00')";
-	//The Date checked here is updated_at as created_at has a user dependency and can go wrong at times.
+	$filter_array[] = "(users.city_id=$this_city_id AND D.created_at >= '$dates[from] 00:00:00')";
+	
 }
 $exclude_people = "(users.id != 29 AND users.id != 146 AND users.id != 27 AND users.id != 150)";
 $city_checks = "(" . implode(" \nOR ", $filter_array) . ") \nAND $exclude_people";
